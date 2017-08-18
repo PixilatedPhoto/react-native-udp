@@ -16,14 +16,21 @@ import com.facebook.react.bridge.Callback;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import android.util.Log;
 
 import static com.tradle.react.UdpSenderTask.OnDataSentListener;
 
@@ -48,6 +55,51 @@ public final class UdpSocketClient implements UdpReceiverTask.OnDataReceivedList
         this.mPendingSends = new ConcurrentHashMap<UdpSenderTask, Callback>();
     }
 
+    public static NetworkInterface getWifiDirectNetworkInterface() {
+
+        List<NetworkInterface> foundInterfaces = new ArrayList<>();
+
+        Enumeration<NetworkInterface> interfaceEnumeration = null;
+        try {
+            interfaceEnumeration = NetworkInterface
+                    .getNetworkInterfaces();
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+
+        while (interfaceEnumeration != null && interfaceEnumeration.hasMoreElements
+                ()) {
+
+            NetworkInterface anInterface = interfaceEnumeration.nextElement();
+
+            if (anInterface.getName().contains("p2p")) {
+
+                foundInterfaces.add(anInterface);
+            }
+
+        }
+
+        for (int i = 0; i < foundInterfaces.size(); i++) {
+
+            NetworkInterface networkInterface = foundInterfaces.get(i);
+
+            Enumeration<InetAddress> inetAdresses = networkInterface.getInetAddresses();
+
+            for (InetAddress inetAddress : Collections.list(inetAdresses)) {
+
+                if (inetAddress instanceof Inet4Address) {
+
+                    return networkInterface;
+                }
+
+            }
+
+        }
+
+        return null;
+
+    }
+
     /**
      * Checks to see if client part of a multi-cast group.
      * @return boolean true IF the socket is part of a multi-cast group.
@@ -68,20 +120,38 @@ public final class UdpSocketClient implements UdpReceiverTask.OnDataReceivedList
      *             if the socket is already bound or a problem occurs during
      *             binding.
      */
-    public void bind(Integer port, @Nullable String address) throws IOException {
-        mSocket = new MulticastSocket(null);
+    public void bind(Integer port, @Nullable String address, Boolean wifiDirect) throws IOException {
+        if (wifiDirect){
+            mSocket = new MulticastSocket(4446);
+            InetAddress group = InetAddress.getByName("224.0.0.4");
+            InetSocketAddress socketAddress = new InetSocketAddress("224.0.0.4", 8000);
 
-        mReceiverTask = new UdpReceiverTask();
+            NetworkInterface wifiDirectNetworkInterface = getWifiDirectNetworkInterface();
 
-        SocketAddress socketAddress;
-        if (address != null) {
-            socketAddress = new InetSocketAddress(InetAddress.getByName(address), port);
-        } else {
-            socketAddress = new InetSocketAddress(port);
+            ((MulticastSocket) mSocket).joinGroup(socketAddress, wifiDirectNetworkInterface);
+            ((MulticastSocket) mSocket).setNetworkInterface(wifiDirectNetworkInterface);
+
+            mReceiverTask = new UdpReceiverTask();
+
+            mSocket.setReuseAddress(mReuseAddress);
         }
+        else {
+            // begin listening for data in the background
+            mSocket = new MulticastSocket(null);
 
-        mSocket.setReuseAddress(mReuseAddress);
-        mSocket.bind(socketAddress);
+            mReceiverTask = new UdpReceiverTask();
+
+            SocketAddress socketAddress;
+            if (address != null) {
+                socketAddress = new InetSocketAddress(InetAddress.getByName(address), port);
+            } else {
+                socketAddress = new InetSocketAddress(port);
+            }
+
+            mSocket.setReuseAddress(mReuseAddress);
+            mSocket.bind(socketAddress);
+        }
+        
 
         // begin listening for data in the background
         mReceiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
@@ -281,3 +351,4 @@ public final class UdpSocketClient implements UdpReceiverTask.OnDataReceivedList
         void didReceiveError(UdpSocketClient client, String message);
     }
 }
+
