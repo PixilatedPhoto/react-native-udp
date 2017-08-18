@@ -125,7 +125,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
      * Binds to a given port and address, and begins listening for data.
      */
     @ReactMethod
-    public void bind(final Integer cId, final Integer port, final @Nullable String address,
+    public void bind(final Integer cId, final Integer port, final @Nullable String address, final Boolean wifiDirect,
                      final Callback callback) {
         new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
             @Override
@@ -136,7 +136,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
                 }
 
                 try {
-                    client.bind(port, address);
+                    client.bind(port, address, wifiDirect);
 
                     WritableMap result = Arguments.createMap();
                     result.putString("address", address);
