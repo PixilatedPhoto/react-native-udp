@@ -50,6 +50,7 @@ function UdpSocket(options, onmessage) {
   this._subscription = DeviceEventEmitter.addListener(
     'udp-' + this._id + '-data', this._onReceive.bind(this)
   );
+  this.wifiDirect = options.wifiDirect || false;
 
   // ensure compatibility with node's EventEmitter
   if (!this.on) this.on = this.addListener.bind(this)
@@ -89,7 +90,7 @@ UdpSocket.prototype.bind = function(port, address, callback) {
 
   this._state = STATE.BINDING
   this._debug('binding, address:', address, 'port:', port)
-  Sockets.bind(this._id, port, address, function(err, addr) {
+  Sockets.bind(this._id, port, address, this.wifiDirect, function(err, addr) {
     err = normalizeError(err)
     if (err) {
       // questionable: may want to self-destruct and
