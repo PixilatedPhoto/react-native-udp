@@ -109,7 +109,9 @@ UdpSocket.prototype.bind = function(port, address, callback) {
     }
     console.log('about to do test', addr);
     self._debug('bound to address:', addr.address, 'port:', addr.port)
+    console.log('now?');
     self._address = addr.address
+    console.log('how bout now?');
     self._port = addr.port
     self._state = STATE.BOUND
     self.emit('listening')
@@ -143,6 +145,7 @@ UdpSocket.prototype._onReceive = function(info) {
     ? base64.toByteArray(info.data)
     : new Buffer(info.data, 'base64')
 
+  console.log('or maybe now!!!?', info);
   var rinfo = {
     address: info.address,
     port: info.port,
@@ -227,6 +230,8 @@ UdpSocket.prototype.address = function() {
   if (this._state !== STATE.BOUND) {
     throw new Error('socket is not bound yet')
   }
+
+  console.log('probably not here', this);
 
   return {
     address: this._address,
