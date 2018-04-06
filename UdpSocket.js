@@ -100,6 +100,7 @@ UdpSocket.prototype.bind = function(port, address, callback) {
   Sockets.bind(...bindArgs, function(err, addr) {
     err = normalizeError(err)
     if (err) {
+      console.log('uhhhhh', err);
       // questionable: may want to self-destruct and
       // force user to create a new socket
       self._state = STATE.UNBOUND
