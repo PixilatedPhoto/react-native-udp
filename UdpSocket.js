@@ -107,7 +107,7 @@ UdpSocket.prototype.bind = function(port, address, callback) {
       if (callback) callback(err)
       return self.emit('error', err)
     }
-
+    console.log('about to do test', addr);
     self._debug('bound to address:', addr.address, 'port:', addr.port)
     self._address = addr.address
     self._port = addr.port
